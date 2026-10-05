@@ -97,7 +97,7 @@
         <div class="game-area">
             <canvas id="gameCanvas" width="200" height="400"></canvas>
             <div class="controls">
-                <p>← → Move | ↑ Rotate | Space Drop</p>
+                <p>← → Move | ↑ Rotate | ↓ Soft Drop | Space Hard Drop</p>
                 <button id="pauseBtn">Pause</button>
                 <button id="resetBtn">New Game</button>
             </div>
@@ -152,6 +152,7 @@
         let paused = false;
         let dropCounter = 0;
         let dropInterval = 800;
+        let softDropActive = false;
 
         function initBoard() {
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
@@ -289,7 +290,8 @@
             if (gameOver || paused) return;
 
             dropCounter += deltaTime;
-            if (dropCounter > dropInterval) {
+            const currentDropInterval = softDropActive ? dropInterval / 4 : dropInterval;
+            if (dropCounter > currentDropInterval) {
                 if (collides(currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
                     place();
                 } else {
@@ -318,9 +320,18 @@
                 }
             } else if (e.key === 'ArrowUp') {
                 rotate();
+            } else if (e.key === 'ArrowDown') {
+                softDropActive = true;
+                e.preventDefault();
             } else if (e.key === ' ') {
                 hardDrop();
                 e.preventDefault();
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowDown') {
+                softDropActive = false;
             }
         });
 
