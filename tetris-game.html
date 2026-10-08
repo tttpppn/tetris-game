@@ -381,29 +381,36 @@
         }
 
         function playClearSound() {
-            // Glass/crystal breaking and shattering sound
+            // Explosion with high treble
             if (!soundEnabled) return;
 
-            // Initial sharp crack
-            playSound(800, 0.08, 'square', 0.6);
-            playSound(1200, 0.06, 'square', 0.5);
+            // Deep boom
+            playSound(100, 0.2, 'sine', 0.7);
+            playSound(150, 0.2, 'square', 0.6);
 
-            // Shattering fragments
+            // Sharp high-frequency blast
             setTimeout(() => {
-                playSound(600, 0.07, 'sawtooth', 0.45);
-                playSound(900, 0.05, 'sawtooth', 0.4);
-                playSound(1100, 0.06, 'sawtooth', 0.35);
-            }, 50);
+                playSound(800, 0.1, 'sawtooth', 0.7);
+                playSound(1200, 0.1, 'sawtooth', 0.65);
+                playSound(1600, 0.08, 'sawtooth', 0.6);
+            }, 80);
 
-            // Tinkling falling shards
-            setTimeout(() => playSound(700, 0.06, 'square', 0.35), 120);
-            setTimeout(() => playSound(500, 0.07, 'square', 0.32), 170);
-            setTimeout(() => playSound(950, 0.05, 'square', 0.3), 210);
-            setTimeout(() => playSound(650, 0.08, 'sawtooth', 0.28), 280);
-            setTimeout(() => playSound(400, 0.1, 'sawtooth', 0.25), 360);
+            // Expanding wave with lots of treble
+            setTimeout(() => {
+                playSound(600, 0.12, 'square', 0.55);
+                playSound(1000, 0.1, 'sawtooth', 0.5);
+                playSound(1400, 0.08, 'sawtooth', 0.45);
+                playSound(1800, 0.08, 'sawtooth', 0.4);
+            }, 180);
 
-            // Final settling ping
-            setTimeout(() => playSound(550, 0.12, 'square', 0.2), 450);
+            // High frequency crackle
+            setTimeout(() => playSound(1100, 0.08, 'sawtooth', 0.5), 300);
+            setTimeout(() => playSound(900, 0.1, 'sawtooth', 0.45), 360);
+            setTimeout(() => playSound(700, 0.12, 'sawtooth', 0.4), 420);
+
+            // Treble fade
+            setTimeout(() => playSound(1300, 0.15, 'sawtooth', 0.35), 480);
+            setTimeout(() => playSound(200, 0.3, 'sine', 0.2), 550);
         }
 
         function playRotateSound() {
