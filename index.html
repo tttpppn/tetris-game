@@ -33,6 +33,7 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            position: relative;
         }
 
         canvas {
@@ -89,6 +90,28 @@
             font-size: 24px;
             font-weight: bold;
             color: #667eea;
+        }
+
+        @keyframes scorePopup {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-50px) scale(1.5);
+            }
+        }
+
+        .score-popup {
+            position: absolute;
+            pointer-events: none;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 0 0 10px rgba(255, 255, 0, 0.8);
+            animation: scorePopup 0.6s ease-out forwards;
+            font-size: 24px;
+            z-index: 10;
         }
     </style>
 </head>
@@ -153,6 +176,10 @@
         let dropCounter = 0;
         let dropInterval = 800;
         let softDropActive = false;
+        let particles = [];
+        let clearingRows = [];
+        let clearAnimationTimer = 0;
+        let screenShakeIntensity = 0;
 
         function initBoard() {
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
@@ -205,14 +232,26 @@
 
         function clearLines() {
             let linesCleared = 0;
+            const rowsToClear = [];
+
             for (let row = ROWS - 1; row >= 0; row--) {
                 if (board[row].every(cell => cell)) {
-                    board.splice(row, 1);
-                    board.unshift(Array(COLS).fill(0));
-                    linesCleared++;
+                    rowsToClear.push(row);
                 }
             }
+
+            linesCleared = rowsToClear.length;
             if (linesCleared) {
+                clearingRows = rowsToClear;
+                clearAnimationTimer = 0.4;
+                screenShakeIntensity = linesCleared * 2;
+
+                rowsToClear.forEach(() => {
+                    board.splice(rowsToClear[0], 1);
+                    board.unshift(Array(COLS).fill(0));
+                });
+
+                createParticles(rowsToClear);
                 lines += linesCleared;
                 score += [40, 100, 300, 1200][linesCleared - 1] * level;
                 level = Math.floor(lines / 10) + 1;
@@ -229,16 +268,66 @@
             }
         }
 
+        function createParticles(rowsToClear) {
+            rowsToClear.forEach(row => {
+                for (let col = 0; col < COLS; col++) {
+                    const x = (col + 0.5) * BLOCK_SIZE;
+                    const y = (row + 0.5) * BLOCK_SIZE;
+                    const angle = (Math.random() * Math.PI * 2);
+                    const speed = 2 + Math.random() * 4;
+                    particles.push({
+                        x, y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed - 2,
+                        life: 1,
+                        color: board[row][col] || '#00f0f0'
+                    });
+                }
+            });
+        }
+
+        function updateParticles(deltaTime) {
+            particles = particles.filter(p => p.life > 0);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15;
+                p.life -= deltaTime / 400;
+            });
+        }
+
         function draw() {
+            ctx.save();
+
+            // Apply screen shake
+            if (screenShakeIntensity > 0) {
+                const shakeX = (Math.random() - 0.5) * screenShakeIntensity;
+                const shakeY = (Math.random() - 0.5) * screenShakeIntensity;
+                ctx.translate(shakeX, shakeY);
+                screenShakeIntensity *= 0.9;
+            }
+
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw board
+            // Draw board with clearing animation
             for (let row = 0; row < ROWS; row++) {
                 for (let col = 0; col < COLS; col++) {
                     if (board[row][col]) {
                         ctx.fillStyle = board[row][col];
-                        ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+
+                        if (clearingRows.includes(row)) {
+                            const flash = Math.sin(clearAnimationTimer * Math.PI * 4) * 0.5 + 0.5;
+                            ctx.globalAlpha = flash;
+                            ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                            ctx.globalAlpha = 1;
+
+                            ctx.strokeStyle = '#ffff00';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                        } else {
+                            ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                        }
                     }
                 }
             }
@@ -256,6 +345,15 @@
                     }
                 }
             }
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                const size = BLOCK_SIZE * 0.5 * p.life;
+                ctx.fillRect(p.x - size / 2, p.y - size / 2, size, size);
+                ctx.globalAlpha = 1;
+            });
 
             // Draw next piece preview
             nextCtx.fillStyle = '#111';
@@ -281,6 +379,8 @@
                 ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
             }
 
+            ctx.restore();
+
             document.getElementById('score').textContent = score;
             document.getElementById('lines').textContent = lines;
             document.getElementById('level').textContent = level;
@@ -288,6 +388,12 @@
 
         function update(deltaTime) {
             if (gameOver || paused) return;
+
+            updateParticles(deltaTime);
+            clearAnimationTimer -= deltaTime / 1000;
+            if (clearAnimationTimer <= 0) {
+                clearingRows = [];
+            }
 
             dropCounter += deltaTime;
             const currentDropInterval = softDropActive ? dropInterval / 4 : dropInterval;
