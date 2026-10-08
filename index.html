@@ -92,6 +92,64 @@
             color: #667eea;
         }
 
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+
+            .info {
+                display: flex;
+                justify-content: space-around;
+                min-width: auto;
+            }
+
+            .info-item {
+                margin: 0;
+            }
+        }
+
+        .touch-controls {
+            display: none;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .touch-controls.active {
+            display: grid;
+        }
+
+        .touch-btn {
+            background: #764ba2;
+            color: white;
+            border: 2px solid #667eea;
+            padding: 15px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.1s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .touch-btn:active {
+            background: #667eea;
+            transform: scale(0.95);
+        }
+
+        .touch-btn.wide {
+            grid-column: span 3;
+        }
+
         @keyframes scorePopup {
             0% {
                 opacity: 1;
@@ -120,9 +178,16 @@
         <div class="game-area">
             <canvas id="gameCanvas" width="200" height="400"></canvas>
             <div class="controls">
-                <p>← → Move | ↑ Rotate | ↓ Soft Drop | Space Hard Drop</p>
+                <p id="controlsText">← → Move | ↑ Rotate | ↓ Soft Drop | Space Hard Drop</p>
                 <button id="pauseBtn">Pause</button>
                 <button id="resetBtn">New Game</button>
+                <div class="touch-controls" id="touchControls">
+                    <button class="touch-btn" id="leftBtn">← Left</button>
+                    <button class="touch-btn" id="rotateBtn">↑ Rotate</button>
+                    <button class="touch-btn" id="rightBtn">Right →</button>
+                    <button class="touch-btn" id="softDropBtn">↓ Soft Drop</button>
+                    <button class="touch-btn wide" id="hardDropBtn">⬇ HARD DROP</button>
+                </div>
             </div>
         </div>
         <div class="info">
@@ -180,6 +245,9 @@
         let clearingRows = [];
         let clearAnimationTimer = 0;
         let screenShakeIntensity = 0;
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
         function initBoard() {
             board = Array(ROWS).fill(null).map(() => Array(COLS).fill(0));
@@ -438,6 +506,75 @@
         document.addEventListener('keyup', (e) => {
             if (e.key === 'ArrowDown') {
                 softDropActive = false;
+            }
+        });
+
+        canvas.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (gameOver || paused) return;
+
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            const threshold = 30;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX < -threshold) {
+                    if (!collides(currentPiece.shape, currentPiece.x - 1, currentPiece.y)) {
+                        currentPiece.x--;
+                    }
+                } else if (diffX > threshold) {
+                    if (!collides(currentPiece.shape, currentPiece.x + 1, currentPiece.y)) {
+                        currentPiece.x++;
+                    }
+                }
+            } else if (Math.abs(diffY) > threshold) {
+                if (diffY < -threshold) {
+                    rotate();
+                } else if (diffY > threshold) {
+                    hardDrop();
+                }
+            }
+        });
+
+        if (isMobile) {
+            document.getElementById('touchControls').classList.add('active');
+            document.getElementById('controlsText').textContent = 'Tap buttons or swipe to play';
+        }
+
+        document.getElementById('leftBtn').addEventListener('click', () => {
+            if (!gameOver && !paused && !collides(currentPiece.shape, currentPiece.x - 1, currentPiece.y)) {
+                currentPiece.x--;
+            }
+        });
+
+        document.getElementById('rightBtn').addEventListener('click', () => {
+            if (!gameOver && !paused && !collides(currentPiece.shape, currentPiece.x + 1, currentPiece.y)) {
+                currentPiece.x++;
+            }
+        });
+
+        document.getElementById('rotateBtn').addEventListener('click', () => {
+            if (!gameOver && !paused) {
+                rotate();
+            }
+        });
+
+        document.getElementById('softDropBtn').addEventListener('click', () => {
+            if (!gameOver && !paused) {
+                softDropActive = true;
+                setTimeout(() => { softDropActive = false; }, 100);
+            }
+        });
+
+        document.getElementById('hardDropBtn').addEventListener('click', () => {
+            if (!gameOver && !paused) {
+                hardDrop();
             }
         });
 
