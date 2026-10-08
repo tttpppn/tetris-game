@@ -381,29 +381,29 @@
         }
 
         function playClearSound() {
-            // Rock crushing sound - multi-layered impact with settling debris
+            // Glass/crystal breaking and shattering sound
             if (!soundEnabled) return;
 
-            // Main impact - deep low frequency
-            playSound(140, 0.12, 'square', 0.6);
-            playSound(180, 0.1, 'square', 0.5);
+            // Initial sharp crack
+            playSound(800, 0.08, 'square', 0.6);
+            playSound(1200, 0.06, 'square', 0.5);
 
-            // Secondary crack with harmonics
+            // Shattering fragments
             setTimeout(() => {
-                playSound(110, 0.08, 'sawtooth', 0.4);
-                playSound(220, 0.08, 'sawtooth', 0.35);
-                playSound(330, 0.08, 'sawtooth', 0.3);
-            }, 60);
+                playSound(600, 0.07, 'sawtooth', 0.45);
+                playSound(900, 0.05, 'sawtooth', 0.4);
+                playSound(1100, 0.06, 'sawtooth', 0.35);
+            }, 50);
 
-            // Debris falling and settling
-            setTimeout(() => playSound(400, 0.08, 'sawtooth', 0.3), 140);
-            setTimeout(() => playSound(280, 0.1, 'sawtooth', 0.3), 200);
-            setTimeout(() => playSound(200, 0.12, 'sawtooth', 0.28), 270);
-            setTimeout(() => playSound(140, 0.14, 'square', 0.25), 350);
-            setTimeout(() => playSound(90, 0.15, 'square', 0.2), 430);
+            // Tinkling falling shards
+            setTimeout(() => playSound(700, 0.06, 'square', 0.35), 120);
+            setTimeout(() => playSound(500, 0.07, 'square', 0.32), 170);
+            setTimeout(() => playSound(950, 0.05, 'square', 0.3), 210);
+            setTimeout(() => playSound(650, 0.08, 'sawtooth', 0.28), 280);
+            setTimeout(() => playSound(400, 0.1, 'sawtooth', 0.25), 360);
 
-            // Final settling crunch
-            setTimeout(() => playSound(70, 0.2, 'sawtooth', 0.15), 500);
+            // Final settling ping
+            setTimeout(() => playSound(550, 0.12, 'square', 0.2), 450);
         }
 
         function playRotateSound() {
@@ -483,13 +483,13 @@
         const BLOCK_SIZE = canvas.width / COLS;
 
         const TETRIS_PIECES = [
-            { shape: [[1,1,1,1]], color: '#d0d0d0' }, // I - Light grey marble
-            { shape: [[1,1],[1,1]], color: '#e8e8e8' }, // O - White marble
-            { shape: [[0,1,1],[1,1,0]], color: '#c0a080' }, // S - Tan marble
-            { shape: [[1,1,0],[0,1,1]], color: '#4a4a4a' }, // Z - Dark grey marble
-            { shape: [[1,0,0],[1,1,1]], color: '#b8860b' }, // J - Golden marble
-            { shape: [[0,0,1],[1,1,1]], color: '#8b7d6b' }, // L - Brown marble
-            { shape: [[0,1,0],[1,1,1]], color: '#a9a9a9' } // T - Dark grey marble
+            { shape: [[1,1,1,1]], color: '#00f0f0' }, // I - Cyan
+            { shape: [[1,1],[1,1]], color: '#f0f000' }, // O - Yellow
+            { shape: [[0,1,1],[1,1,0]], color: '#00f000' }, // S - Green
+            { shape: [[1,1,0],[0,1,1]], color: '#f00000' }, // Z - Red
+            { shape: [[1,0,0],[1,1,1]], color: '#0000f0' }, // J - Blue
+            { shape: [[0,0,1],[1,1,1]], color: '#f0a000' }, // L - Orange
+            { shape: [[0,1,0],[1,1,1]], color: '#f000f0' } // T - Purple
         ];
 
         let board = [];
