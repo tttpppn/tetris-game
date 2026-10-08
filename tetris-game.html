@@ -46,8 +46,9 @@
 
         .game-wrapper {
             display: flex;
-            gap: 15px;
+            gap: 20px;
             justify-content: center;
+            align-items: flex-start;
             flex-wrap: wrap;
         }
 
@@ -377,12 +378,15 @@
         }
 
         function playClearSound() {
-            // Rock breaking sound - harsh descending tones with noise-like quality
-            playSound(800, 0.05, 'square', 0.4);
-            playSound(600, 0.08, 'square', 0.4);
-            playSound(400, 0.1, 'sawtooth', 0.3);
-            playSound(300, 0.12, 'square', 0.3);
-            playSound(200, 0.08, 'sawtooth', 0.25);
+            // Rock breaking/shattering sound effect
+            // Create harsh noise-like bursts at different frequencies
+            playSound(600, 0.15, 'square', 0.5);
+            setTimeout(() => playSound(800, 0.12, 'sawtooth', 0.4), 50);
+            setTimeout(() => playSound(400, 0.1, 'square', 0.45), 100);
+            setTimeout(() => playSound(950, 0.08, 'sawtooth', 0.35), 150);
+            setTimeout(() => playSound(300, 0.15, 'square', 0.3), 200);
+            // Final crunch
+            setTimeout(() => playSound(550, 0.2, 'sawtooth', 0.4), 350);
         }
 
         function playRotateSound() {
@@ -601,6 +605,27 @@
             }
         }
 
+        function drawIceCrystal(x, y, size, color) {
+            // Draw ice crystal block with gradient and highlights
+            const grad = ctx.createLinearGradient(x, y, x + size, y + size);
+            grad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+            grad.addColorStop(0.5, color);
+            grad.addColorStop(1, 'rgba(0, 0, 50, 0.5)');
+
+            ctx.fillStyle = grad;
+            ctx.fillRect(x, y, size, size);
+
+            // Add crystalline border
+            ctx.strokeStyle = 'rgba(100, 200, 255, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x, y, size, size);
+
+            // Add inner highlight for ice effect
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.fillRect(x + 1, y + 1, size / 3, size / 3);
+            ctx.fillRect(x + size - size/3 - 1, y + size - size/3 - 1, size / 3, size / 3);
+        }
+
         function draw() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -609,21 +634,19 @@
             for (let row = 0; row < ROWS; row++) {
                 for (let col = 0; col < COLS; col++) {
                     if (board[row][col]) {
-                        ctx.fillStyle = board[row][col];
-                        ctx.fillRect(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                        drawIceCrystal(col * BLOCK_SIZE, row * BLOCK_SIZE, BLOCK_SIZE - 1, board[row][col]);
                     }
                 }
             }
 
             // Draw current piece
             if (currentPiece) {
-                ctx.fillStyle = currentPiece.color;
                 for (let row = 0; row < currentPiece.shape.length; row++) {
                     for (let col = 0; col < currentPiece.shape[row].length; col++) {
                         if (currentPiece.shape[row][col]) {
                             const x = (currentPiece.x + col) * BLOCK_SIZE;
                             const y = (currentPiece.y + row) * BLOCK_SIZE;
-                            ctx.fillRect(x, y, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+                            drawIceCrystal(x, y, BLOCK_SIZE - 1, currentPiece.color);
                         }
                     }
                 }
@@ -633,11 +656,26 @@
             nextCtx.fillStyle = '#111';
             nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
             if (nextPiece) {
-                nextCtx.fillStyle = nextPiece.color;
                 for (let row = 0; row < nextPiece.shape.length; row++) {
                     for (let col = 0; col < nextPiece.shape[row].length; col++) {
                         if (nextPiece.shape[row][col]) {
-                            nextCtx.fillRect(col * 20 + 10, row * 20 + 10, 18, 18);
+                            const x = col * 20 + 10;
+                            const y = row * 20 + 10;
+                            // Draw ice crystal for next piece
+                            const grad = nextCtx.createLinearGradient(x, y, x + 18, y + 18);
+                            grad.addColorStop(0, 'rgba(255, 255, 255, 0.6)');
+                            grad.addColorStop(0.5, nextPiece.color);
+                            grad.addColorStop(1, 'rgba(0, 0, 50, 0.5)');
+
+                            nextCtx.fillStyle = grad;
+                            nextCtx.fillRect(x, y, 18, 18);
+
+                            nextCtx.strokeStyle = 'rgba(100, 200, 255, 0.8)';
+                            nextCtx.lineWidth = 1;
+                            nextCtx.strokeRect(x, y, 18, 18);
+
+                            nextCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                            nextCtx.fillRect(x + 1, y + 1, 6, 6);
                         }
                     }
                 }
