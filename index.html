@@ -522,7 +522,15 @@
             const diffX = touchEndX - touchStartX;
             const diffY = touchEndY - touchStartY;
             const threshold = 30;
+            const distance = Math.sqrt(diffX * diffX + diffY * diffY);
 
+            // Tap to rotate (small distance = tap)
+            if (distance < threshold) {
+                rotate();
+                return;
+            }
+
+            // Swipe left/right to move, swipe down for hard drop
             if (Math.abs(diffX) > Math.abs(diffY)) {
                 if (diffX < -threshold) {
                     if (!collides(currentPiece.shape, currentPiece.x - 1, currentPiece.y)) {
@@ -533,18 +541,14 @@
                         currentPiece.x++;
                     }
                 }
-            } else if (Math.abs(diffY) > threshold) {
-                if (diffY < -threshold) {
-                    rotate();
-                } else if (diffY > threshold) {
-                    hardDrop();
-                }
+            } else if (diffY > threshold) {
+                hardDrop();
             }
         });
 
         if (isMobile) {
             document.getElementById('touchControls').classList.add('active');
-            document.getElementById('controlsText').textContent = 'Tap buttons or swipe to play';
+            document.getElementById('controlsText').textContent = 'Tap to rotate | Swipe left/right to move | Swipe down to drop';
         }
 
         document.getElementById('leftBtn').addEventListener('click', () => {
