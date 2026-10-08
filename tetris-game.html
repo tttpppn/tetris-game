@@ -377,9 +377,12 @@
         }
 
         function playClearSound() {
-            playSound(400, 0.1, 'sine', 0.3);
-            playSound(500, 0.1, 'sine', 0.3);
-            playSound(600, 0.15, 'sine', 0.3);
+            // Rock breaking sound - harsh descending tones with noise-like quality
+            playSound(800, 0.05, 'square', 0.4);
+            playSound(600, 0.08, 'square', 0.4);
+            playSound(400, 0.1, 'sawtooth', 0.3);
+            playSound(300, 0.12, 'square', 0.3);
+            playSound(200, 0.08, 'sawtooth', 0.25);
         }
 
         function playRotateSound() {
@@ -394,6 +397,58 @@
             playSound(200, 0.3, 'sine', 0.4);
             playSound(150, 0.3, 'sine', 0.4);
             playSound(100, 0.5, 'sine', 0.4);
+        }
+
+        // Background music system
+        let backgroundMusicActive = false;
+        let musicNoteIndex = 0;
+        let musicTempo = 400;
+        const musicNotes = [
+            { freq: 400, duration: 0.25 },
+            { freq: 500, duration: 0.25 },
+            { freq: 600, duration: 0.25 },
+            { freq: 500, duration: 0.25 },
+            { freq: 400, duration: 0.5 }
+        ];
+
+        function playBackgroundMusic() {
+            if (!soundEnabled || !backgroundMusicActive) return;
+
+            const note = musicNotes[musicNoteIndex % musicNotes.length];
+            playSound(note.freq, note.duration, 'sine', 0.15);
+            musicNoteIndex++;
+
+            // Schedule next note with current tempo
+            setTimeout(playBackgroundMusic, musicTempo);
+        }
+
+        function getStackHeight() {
+            let maxHeight = 0;
+            for (let row = 0; row < ROWS; row++) {
+                if (board[row].some(cell => cell)) {
+                    maxHeight = ROWS - row;
+                }
+            }
+            return maxHeight;
+        }
+
+        function updateBackgroundMusic() {
+            const stackHeight = getStackHeight();
+            const fillPercentage = (stackHeight / ROWS) * 100;
+            const wasActive = backgroundMusicActive;
+
+            // Start music when >75% full
+            backgroundMusicActive = fillPercentage > 75;
+
+            // Increase tempo as stack gets higher (faster when more full)
+            if (backgroundMusicActive) {
+                musicTempo = Math.max(150, 400 - (fillPercentage * 3));
+            }
+
+            // Start playing if just activated
+            if (backgroundMusicActive && !wasActive) {
+                playBackgroundMusic();
+            }
         }
 
         // Canvas setup
@@ -612,6 +667,7 @@
             if (dropCounter > dropInterval) {
                 if (collides(currentPiece.shape, currentPiece.x, currentPiece.y + 1)) {
                     place();
+                    updateBackgroundMusic();
                 } else {
                     currentPiece.y++;
                 }
@@ -662,6 +718,8 @@
             dropInterval = 800;
             currentPiece = null;
             nextPiece = null;
+            backgroundMusicActive = false;
+            musicNoteIndex = 0;
             spawn();
             document.getElementById('pauseBtn').textContent = 'Pause';
         });
