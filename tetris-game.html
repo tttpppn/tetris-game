@@ -378,15 +378,24 @@
         }
 
         function playClearSound() {
-            // Rock breaking/shattering sound effect
-            // Create harsh noise-like bursts at different frequencies
-            playSound(600, 0.15, 'square', 0.5);
-            setTimeout(() => playSound(800, 0.12, 'sawtooth', 0.4), 50);
-            setTimeout(() => playSound(400, 0.1, 'square', 0.45), 100);
-            setTimeout(() => playSound(950, 0.08, 'sawtooth', 0.35), 150);
-            setTimeout(() => playSound(300, 0.15, 'square', 0.3), 200);
-            // Final crunch
-            setTimeout(() => playSound(550, 0.2, 'sawtooth', 0.4), 350);
+            // Rock breaking sound - heavy impact with debris falling
+            if (!soundEnabled) return;
+
+            // Initial heavy crack
+            playSound(150, 0.08, 'square', 0.5);
+
+            // Secondary impact
+            setTimeout(() => {
+                playSound(120, 0.1, 'square', 0.4);
+                playSound(200, 0.08, 'square', 0.35);
+            }, 80);
+
+            // Debris falling sounds - descending frequencies
+            setTimeout(() => playSound(400, 0.06, 'sawtooth', 0.3), 150);
+            setTimeout(() => playSound(320, 0.07, 'sawtooth', 0.3), 200);
+            setTimeout(() => playSound(250, 0.08, 'sawtooth', 0.3), 250);
+            setTimeout(() => playSound(180, 0.1, 'sawtooth', 0.25), 300);
+            setTimeout(() => playSound(100, 0.12, 'sawtooth', 0.2), 350);
         }
 
         function playRotateSound() {
@@ -466,13 +475,13 @@
         const BLOCK_SIZE = canvas.width / COLS;
 
         const TETRIS_PIECES = [
-            { shape: [[1,1,1,1]], color: '#00f0f0' }, // I
-            { shape: [[1,1],[1,1]], color: '#f0f0f0' }, // O
-            { shape: [[0,1,1],[1,1,0]], color: '#f0a000' }, // S
-            { shape: [[1,1,0],[0,1,1]], color: '#0f00f0' }, // Z
-            { shape: [[1,0,0],[1,1,1]], color: '#f000f0' }, // J
-            { shape: [[0,0,1],[1,1,1]], color: '#00f000' }, // L
-            { shape: [[0,1,0],[1,1,1]], color: '#f00000' } // T
+            { shape: [[1,1,1,1]], color: '#d0d0d0' }, // I - Light grey marble
+            { shape: [[1,1],[1,1]], color: '#e8e8e8' }, // O - White marble
+            { shape: [[0,1,1],[1,1,0]], color: '#c0a080' }, // S - Tan marble
+            { shape: [[1,1,0],[0,1,1]], color: '#4a4a4a' }, // Z - Dark grey marble
+            { shape: [[1,0,0],[1,1,1]], color: '#b8860b' }, // J - Golden marble
+            { shape: [[0,0,1],[1,1,1]], color: '#8b7d6b' }, // L - Brown marble
+            { shape: [[0,1,0],[1,1,1]], color: '#a9a9a9' } // T - Dark grey marble
         ];
 
         let board = [];
@@ -485,6 +494,8 @@
         let paused = false;
         let dropCounter = 0;
         let dropInterval = 800;
+        let crumbleEffect = [];
+        let crumbleTime = 0;
 
         // Detect if touch controls needed
         const touchControls = document.getElementById('touchControls');
@@ -553,21 +564,49 @@
             spawn();
         }
 
+        function createCrumbleEffect(row) {
+            for (let col = 0; col < COLS; col++) {
+                if (board[row][col]) {
+                    crumbleEffect.push({
+                        x: col * BLOCK_SIZE + BLOCK_SIZE / 2,
+                        y: row * BLOCK_SIZE + BLOCK_SIZE / 2,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: Math.random() * 3 + 1,
+                        size: BLOCK_SIZE * 0.4,
+                        color: board[row][col],
+                        life: 0.3
+                    });
+                }
+            }
+        }
+
         function clearLines() {
             let linesCleared = 0;
+            const rowsToClear = [];
+
             for (let row = ROWS - 1; row >= 0; row--) {
                 if (board[row].every(cell => cell)) {
-                    board.splice(row, 1);
-                    board.unshift(Array(COLS).fill(0));
+                    rowsToClear.push(row);
                     linesCleared++;
                 }
             }
+
             if (linesCleared) {
+                // Create crumble effect for each row being cleared
+                rowsToClear.forEach(row => createCrumbleEffect(row));
+
+                // Clear rows
+                rowsToClear.forEach(row => {
+                    board.splice(row, 1);
+                    board.unshift(Array(COLS).fill(0));
+                });
+
                 playClearSound();
                 lines += linesCleared;
                 score += [40, 100, 300, 1200][linesCleared - 1] * level;
                 level = Math.floor(lines / 10) + 1;
                 dropInterval = Math.max(100, 800 - (level - 1) * 50);
+                crumbleTime = 0;
             }
         }
 
@@ -681,6 +720,13 @@
                 }
             }
 
+            // Draw crumble particles
+            for (let particle of crumbleEffect) {
+                const alpha = Math.max(0, particle.life - crumbleTime);
+                ctx.fillStyle = particle.color.replace(')', ', ' + alpha + ')').replace('rgb', 'rgba');
+                ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
+            }
+
             // Draw game over message
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
@@ -700,6 +746,15 @@
 
         function update(deltaTime) {
             if (gameOver || paused) return;
+
+            // Update crumble particles
+            crumbleTime += deltaTime / 1000;
+            crumbleEffect = crumbleEffect.filter(p => crumbleTime < p.life);
+            crumbleEffect.forEach(p => {
+                p.y += p.vy;
+                p.vy += 0.15; // gravity
+                p.vx *= 0.98; // air resistance
+            });
 
             dropCounter += deltaTime;
             if (dropCounter > dropInterval) {
@@ -758,6 +813,8 @@
             nextPiece = null;
             backgroundMusicActive = false;
             musicNoteIndex = 0;
+            crumbleEffect = [];
+            crumbleTime = 0;
             spawn();
             document.getElementById('pauseBtn').textContent = 'Pause';
         });
