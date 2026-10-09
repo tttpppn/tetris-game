@@ -138,7 +138,6 @@
             <th>Mix</th>
             <th>Date</th>
             <th>Taken</th>
-            <th>Joint</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -280,7 +279,7 @@ function generateSampleTons(lot, rng = Math.random) {
   for (let n = 1; n <= SUBLOTS_PER_LOT; n++) {
     const range = sublotRangeCt(lot, n);
     const minTons = range.start / 100;
-    const maxTons = range.end / 100 - 0.01; // stay within range
+    const maxTons = range.end / 100 - 0.01;
     const tons = Math.floor(randInt(minTons * 100, maxTons * 100, rng) / 100);
     samples.push({ tonCt: tons * 100, taken: false });
   }
@@ -320,7 +319,7 @@ function computeMixLedgers(state) {
 // ============================================================================
 // LOT RECONCILIATION
 // ============================================================================
-function reconcileLots(state, ledgers) {
+function reconcileLots(state, ledgers, today = new Date()) {
   const lotsForMix = {};
   state.lots.forEach(lot => {
     const key = normMix(lot.mix);
@@ -343,9 +342,14 @@ function reconcileLots(state, ledgers) {
     if (!lotsForMix[key]) lotsForMix[key] = [];
     const existing = lotsForMix[key];
 
-    const currentMaxIndex = existing.length > 0 ? Math.max(...existing.map(l => l.index)) : -1;
+    const activeLots = existing.filter(lot => {
+      const createdDate = parseLocalDate(lot.createdDate);
+      return daysBetween(createdDate, today) < WINDOW_DAYS;
+    });
 
-    for (let idx = currentMaxIndex + 1; idx <= neededIndex; idx++) {
+    const lastActiveLot = activeLots.length > 0 ? Math.max(...activeLots.map(l => l.index)) : -1;
+
+    for (let idx = lastActiveLot + 1; idx <= neededIndex; idx++) {
       const nextLotNo = state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo;
       const newLot = {
         lotNo: nextLotNo,
@@ -353,7 +357,8 @@ function reconcileLots(state, ledgers) {
         mixKey: key,
         index: idx,
         createdBy: 'auto',
-        samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false, joint: false }))
+        createdDate: fmtLocalDate(today),
+        samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false }))
       };
       state.nextLotNo = nextLotNo + 1;
       existing.push(newLot);
@@ -444,7 +449,7 @@ function lotWindow(lot, ledger, today) {
 function derive(state, today = new Date()) {
   const ledgers = computeMixLedgers(state);
 
-  reconcileLots(state, ledgers);
+  reconcileLots(state, ledgers, today);
 
   const shiftRows = [];
   const sortedShifts = sortShifts(state.shifts);
@@ -514,6 +519,7 @@ function derive(state, today = new Date()) {
 
   state.lots.forEach(lot => {
     const key = normMix(lot.mix);
+    if (!summary[key]) summary[key] = { total: 0, lots: [] };
     if (!summary[key].lots.find(l => l.index === lot.index)) {
       summary[key].lots.push({ lot, taken: 0, due: 0, waiting: 0, pending: 0 });
     }
@@ -606,6 +612,7 @@ function createLot(mix, lotNo) {
     mixKey: key,
     index: maxIndex + 1,
     createdBy: 'manual',
+    createdDate: fmtLocalDate(new Date()),
     samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false }))
   };
   if (!lotNo) state.nextLotNo = nextLotNo + 1;
@@ -652,13 +659,6 @@ function toggleTaken(lotNo, sublot) {
   }
 }
 
-function toggleJoint(lotNo, sublot) {
-  const lot = state.lots.find(l => l.lotNo === lotNo);
-  if (lot && lot.samples[sublot - 1]) {
-    lot.samples[sublot - 1].joint = !lot.samples[sublot - 1].joint;
-    commit();
-  }
-}
 
 // ============================================================================
 // RENDERING
@@ -803,7 +803,6 @@ function renderSamplingTable(derived) {
       <td>${row.lot.mix}</td>
       <td>${row.sampleDate || '—'}</td>
       <td><input type="checkbox" ${sample.taken ? 'checked' : ''} ${takenDisabled} onchange="toggleTaken(${row.lot.lotNo}, ${row.sublot})"></td>
-      <td><input type="checkbox" ${sample.joint ? 'checked' : ''} onchange="toggleJoint(${row.lot.lotNo}, ${row.sublot})" title="Joint core"></td>
       <td>${row.status}</td>
     </tr>`;
   });
@@ -983,14 +982,15 @@ function loadExampleData() {
         mixKey: 'pma0.5',
         index: 0,
         createdBy: 'manual',
+        createdDate: '2026-07-10',
         samples: [
-          { tonCt: toCt(360), taken: false, joint: false },
-          { tonCt: toCt(606), taken: false, joint: false },
-          { tonCt: toCt(1200), taken: false, joint: false },
-          { tonCt: toCt(1693), taken: false, joint: false },
-          { tonCt: toCt(2321), taken: false, joint: false },
-          { tonCt: toCt(2631), taken: false, joint: false },
-          { tonCt: toCt(3133), taken: false, joint: false }
+          { tonCt: toCt(360), taken: false },
+          { tonCt: toCt(606), taken: false },
+          { tonCt: toCt(1200), taken: false },
+          { tonCt: toCt(1693), taken: false },
+          { tonCt: toCt(2321), taken: false },
+          { tonCt: toCt(2631), taken: false },
+          { tonCt: toCt(3133), taken: false }
         ]
       },
       {
@@ -999,14 +999,15 @@ function loadExampleData() {
         mixKey: 'pma1.0',
         index: 0,
         createdBy: 'auto',
+        createdDate: '2026-07-15',
         samples: [
-          { tonCt: toCt(200), taken: false, joint: false },
-          { tonCt: toCt(646), taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false }
+          { tonCt: toCt(200), taken: false },
+          { tonCt: toCt(646), taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false }
         ]
       },
       {
@@ -1015,14 +1016,15 @@ function loadExampleData() {
         mixKey: 'pma0.5',
         index: 1,
         createdBy: 'auto',
+        createdDate: '2026-07-20',
         samples: [
-          { tonCt: toCt(3750), taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false },
-          { tonCt: null, taken: false, joint: false }
+          { tonCt: toCt(3750), taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false },
+          { tonCt: null, taken: false }
         ]
       }
     ],
