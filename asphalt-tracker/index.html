@@ -838,6 +838,7 @@ function editShiftUI(id) {
 
   const btn = document.getElementById('addShiftBtn');
   const oldText = btn.textContent;
+  const origHandler = btn.onclick;
   btn.textContent = 'Update Shift';
   btn.onclick = () => {
     editShift(id, document.getElementById('shiftDate').value, document.getElementById('shiftMix').value, document.getElementById('shiftTons').value, document.getElementById('shiftBridge').checked);
@@ -846,7 +847,7 @@ function editShiftUI(id) {
     document.getElementById('shiftTons').value = '';
     document.getElementById('shiftBridge').checked = false;
     btn.textContent = oldText;
-    btn.onclick = null;
+    btn.onclick = origHandler;
   };
 }
 
