@@ -104,6 +104,17 @@
   <h1>PWL Asphalt Sampling Tracker &amp; Shift Log</h1>
   <div id="banner"></div>
 
+  <div class="summary-box" style="background: #f0f8ff;">
+    <div style="display: flex; gap: 16px; align-items: center;">
+      <label style="margin: 0;">
+        <strong>Starting Lot Number:</strong>
+        <input type="number" id="startLotNo" value="100" style="width: 80px; margin-left: 8px;">
+      </label>
+      <button id="updateStartLotBtn" class="secondary" style="padding: 6px 12px; font-size: 0.9rem;">Update</button>
+      <span id="lotInfo" style="font-size: 0.9rem; color: #666;"></span>
+    </div>
+  </div>
+
   <div class="summary-box" id="summary"></div>
 
   <div class="wrap">
@@ -334,14 +345,16 @@ function reconcileLots(state, ledgers) {
     const currentMaxIndex = existing.length > 0 ? Math.max(...existing.map(l => l.index)) : -1;
 
     for (let idx = currentMaxIndex + 1; idx <= neededIndex; idx++) {
+      const nextLotNo = state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo;
       const newLot = {
-        lotNo: state.nextSeq++,
+        lotNo: nextLotNo,
         mix: state.shifts.find(s => normMix(s.mix) === key).mix,
         mixKey: key,
         index: idx,
         createdBy: 'auto',
         samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false }))
       };
+      state.nextLotNo = nextLotNo + 1;
       existing.push(newLot);
       state.lots.push(newLot);
     }
@@ -585,14 +598,16 @@ function createLot(mix, lotNo) {
   const lotsForMix = state.lots.filter(l => l.mixKey === key);
   const maxIndex = lotsForMix.length > 0 ? Math.max(...lotsForMix.map(l => l.index)) : -1;
 
+  const nextLotNo = lotNo || (state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo);
   const newLot = {
-    lotNo: lotNo || state.nextSeq++,
+    lotNo: nextLotNo,
     mix,
     mixKey: key,
     index: maxIndex + 1,
     createdBy: 'manual',
     samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false }))
   };
+  if (!lotNo) state.nextLotNo = nextLotNo + 1;
 
   state.lots.push(newLot);
   commit();
@@ -657,6 +672,7 @@ function render() {
   renderSamplingTable(derived);
   renderShiftTable(derived);
   updateMixList();
+  updateLotInfo();
 }
 
 function renderSummary(derived) {
@@ -923,6 +939,7 @@ function clearAll() {
     version: 1,
     settings: { startLotNo: 100 },
     nextSeq: 100,
+    nextLotNo: 100,
     shifts: [],
     lots: [],
     ui: { sortMode: 'date', filterLot: '', filterMix: '', hideEmpty: false }
@@ -941,6 +958,7 @@ function loadExampleData() {
     version: 1,
     settings: { startLotNo: 100 },
     nextSeq: 103,
+    nextLotNo: 103,
     shifts: [
       { id: 's1', seq: 100, date: '2026-06-30', mix: 'PMA0.5', tonsCt: 1081, bridge: false },
       { id: 's2', seq: 101, date: '2026-07-05', mix: 'PMA0.5', tonsCt: 600, bridge: false },
@@ -1144,7 +1162,30 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('selfTestBtn').onclick = runSelfTest;
   document.getElementById('loadExampleBtn').onclick = loadExampleData;
   document.getElementById('clearAllBtn').onclick = clearAll;
+
+  document.getElementById('startLotNo').value = state.settings.startLotNo;
+  document.getElementById('updateStartLotBtn').onclick = () => {
+    const newStart = parseInt(document.getElementById('startLotNo').value);
+    if (isNaN(newStart) || newStart < 1) {
+      showBanner('Starting lot number must be a positive integer', 'error');
+      return;
+    }
+    state.settings.startLotNo = newStart;
+    state.nextLotNo = newStart;
+    saveState();
+    updateLotInfo();
+    showBanner(`Starting lot number updated to ${newStart}`, 'success');
+  };
+
+  updateLotInfo();
 });
+
+function updateLotInfo() {
+  const info = document.getElementById('lotInfo');
+  const currentMax = state.lots.length > 0 ? Math.max(...state.lots.map(l => l.lotNo)) : state.settings.startLotNo - 1;
+  const nextLot = state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo;
+  info.textContent = `Next lot: ${nextLot} | Last lot: ${currentMax}`;
+}
 </script>
 
 </body>
