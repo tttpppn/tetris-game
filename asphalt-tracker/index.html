@@ -81,7 +81,6 @@
     .shift-form input[type="text"] { flex: 0 0 150px; }
 
     .status-pending { background: #f0f0f0; }
-    .status-waiting { background: #fff3cd; }
     .status-due { background: #ffe6e6; }
     .status-taken { background: #d4edda; }
 
@@ -186,7 +185,6 @@
 const LOT_TONS = 3500;
 const SUBLOT_TONS = 500;
 const SUBLOTS_PER_LOT = 7;
-const WAIT_TONS = 100;
 const WINDOW_DAYS = 30;
 const STORAGE_KEY = 'pwlTracker.v1';
 
@@ -381,13 +379,12 @@ function splitShiftAcrossLots(beforeCt, afterCt, lotsForMix) {
 }
 
 // ============================================================================
-// 100-TON RULE AND STATUS
+// SAMPLE DUE DATE
 // ============================================================================
 function findSampleDate(ledger, sampleCt) {
-  const threshold = sampleCt + toCt(WAIT_TONS);
   for (const entry of ledger) {
     if (entry.excluded) continue;
-    if (entry.afterCt >= threshold) {
+    if (entry.afterCt >= sampleCt) {
       return entry.shift.date;
     }
   }
@@ -397,13 +394,7 @@ function findSampleDate(ledger, sampleCt) {
 function sampleStatus(totalCt, sampleCt, taken) {
   if (sampleCt === null) return 'Pending (not generated)';
   if (taken) return 'Taken';
-
-  const threshold = sampleCt + toCt(WAIT_TONS);
-  if (totalCt >= threshold) return 'Due';
-  if (totalCt >= sampleCt) {
-    const toGo = threshold - totalCt;
-    return `Waiting (${fmtTons(toGo)} to go)`;
-  }
+  if (totalCt >= sampleCt) return 'Due';
   return 'Pending';
 }
 
@@ -1028,13 +1019,13 @@ function runSelfTest() {
   });
   tests.push({ name: 'A. Example data totals', pass: testA });
 
-  // Test B: 100-ton rule boundary
+  // Test B: Sample due when total reaches sample tonnage
   const testState2 = {
     version: 1,
     settings: { startLotNo: 100 },
     nextSeq: 100,
     shifts: [
-      { id: 's1', seq: 100, date: '2026-01-01', mix: 'Test', tonsCt: 3161, bridge: false }
+      { id: 's1', seq: 100, date: '2026-01-01', mix: 'Test', tonsCt: 3133, bridge: false }
     ],
     lots: [
       {
@@ -1053,8 +1044,8 @@ function runSelfTest() {
   };
   const derived2 = derive(testState2);
   const sample = derived2.sampleRows[0];
-  const testB = sample.status === 'Waiting (67.00 to go)';
-  tests.push({ name: 'B. 100-ton rule (Waiting state)', pass: testB });
+  const testB = sample.status === 'Due';
+  tests.push({ name: 'B. Sample due at sample tonnage', pass: testB });
 
   // Test C: Generation validation
   let testC = true;
