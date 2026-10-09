@@ -138,6 +138,7 @@
             <th>Mix</th>
             <th>Date</th>
             <th>Taken</th>
+            <th>Joint</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -352,7 +353,7 @@ function reconcileLots(state, ledgers) {
         mixKey: key,
         index: idx,
         createdBy: 'auto',
-        samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false }))
+        samples: Array(SUBLOTS_PER_LOT).fill(null).map(() => ({ tonCt: null, taken: false, joint: false }))
       };
       state.nextLotNo = nextLotNo + 1;
       existing.push(newLot);
@@ -651,6 +652,14 @@ function toggleTaken(lotNo, sublot) {
   }
 }
 
+function toggleJoint(lotNo, sublot) {
+  const lot = state.lots.find(l => l.lotNo === lotNo);
+  if (lot && lot.samples[sublot - 1]) {
+    lot.samples[sublot - 1].joint = !lot.samples[sublot - 1].joint;
+    commit();
+  }
+}
+
 // ============================================================================
 // RENDERING
 // ============================================================================
@@ -759,7 +768,7 @@ function renderSamplingTable(derived) {
       });
 
       let headerHtml = `<tr class="lot-header">
-        <td colspan="7">
+        <td colspan="8">
           <strong>Lot ${lot.lotNo} (${lot.mix}, index ${lot.index})</strong>
           <button class="secondary" style="margin-left: 16px; padding: 4px 8px; font-size: 0.8rem;" onclick="generateSamples(${lot.lotNo})">
             Generate samples
@@ -794,6 +803,7 @@ function renderSamplingTable(derived) {
       <td>${row.lot.mix}</td>
       <td>${row.sampleDate || '—'}</td>
       <td><input type="checkbox" ${sample.taken ? 'checked' : ''} ${takenDisabled} onchange="toggleTaken(${row.lot.lotNo}, ${row.sublot})"></td>
+      <td><input type="checkbox" ${sample.joint ? 'checked' : ''} onchange="toggleJoint(${row.lot.lotNo}, ${row.sublot})" title="Joint core"></td>
       <td>${row.status}</td>
     </tr>`;
   });
@@ -974,13 +984,13 @@ function loadExampleData() {
         index: 0,
         createdBy: 'manual',
         samples: [
-          { tonCt: toCt(360), taken: false },
-          { tonCt: toCt(606), taken: false },
-          { tonCt: toCt(1200), taken: false },
-          { tonCt: toCt(1693), taken: false },
-          { tonCt: toCt(2321), taken: false },
-          { tonCt: toCt(2631), taken: false },
-          { tonCt: toCt(3133), taken: false }
+          { tonCt: toCt(360), taken: false, joint: false },
+          { tonCt: toCt(606), taken: false, joint: false },
+          { tonCt: toCt(1200), taken: false, joint: false },
+          { tonCt: toCt(1693), taken: false, joint: false },
+          { tonCt: toCt(2321), taken: false, joint: false },
+          { tonCt: toCt(2631), taken: false, joint: false },
+          { tonCt: toCt(3133), taken: false, joint: false }
         ]
       },
       {
@@ -990,13 +1000,13 @@ function loadExampleData() {
         index: 0,
         createdBy: 'auto',
         samples: [
-          { tonCt: toCt(200), taken: false },
-          { tonCt: toCt(646), taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false }
+          { tonCt: toCt(200), taken: false, joint: false },
+          { tonCt: toCt(646), taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false }
         ]
       },
       {
@@ -1006,13 +1016,13 @@ function loadExampleData() {
         index: 1,
         createdBy: 'auto',
         samples: [
-          { tonCt: toCt(3750), taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false },
-          { tonCt: null, taken: false }
+          { tonCt: toCt(3750), taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false },
+          { tonCt: null, taken: false, joint: false }
         ]
       }
     ],
@@ -1163,28 +1173,36 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('loadExampleBtn').onclick = loadExampleData;
   document.getElementById('clearAllBtn').onclick = clearAll;
 
-  document.getElementById('startLotNo').value = state.settings.startLotNo;
-  document.getElementById('updateStartLotBtn').onclick = () => {
-    const newStart = parseInt(document.getElementById('startLotNo').value);
-    if (isNaN(newStart) || newStart < 1) {
-      showBanner('Starting lot number must be a positive integer', 'error');
-      return;
-    }
-    state.settings.startLotNo = newStart;
-    state.nextLotNo = newStart;
-    saveState();
+  const startLotNoInput = document.getElementById('startLotNo');
+  const updateBtn = document.getElementById('updateStartLotBtn');
+  if (startLotNoInput && updateBtn) {
+    startLotNoInput.value = state.settings.startLotNo;
+    updateBtn.onclick = () => {
+      const newStart = parseInt(startLotNoInput.value);
+      if (isNaN(newStart) || newStart < 1) {
+        showBanner('Starting lot number must be a positive integer', 'error');
+        return;
+      }
+      state.settings.startLotNo = newStart;
+      state.nextLotNo = newStart;
+      saveState();
+      updateLotInfo();
+      showBanner(`Starting lot number updated to ${newStart}`, 'success');
+    };
     updateLotInfo();
-    showBanner(`Starting lot number updated to ${newStart}`, 'success');
-  };
-
-  updateLotInfo();
+  }
 });
 
 function updateLotInfo() {
-  const info = document.getElementById('lotInfo');
-  const currentMax = state.lots.length > 0 ? Math.max(...state.lots.map(l => l.lotNo)) : state.settings.startLotNo - 1;
-  const nextLot = state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo;
-  info.textContent = `Next lot: ${nextLot} | Last lot: ${currentMax}`;
+  try {
+    const info = document.getElementById('lotInfo');
+    if (!info || !state) return;
+    const currentMax = state.lots.length > 0 ? Math.max(...state.lots.map(l => l.lotNo)) : state.settings.startLotNo - 1;
+    const nextLot = state.nextLotNo === undefined ? state.settings.startLotNo + state.lots.length : state.nextLotNo;
+    info.textContent = `Next lot: ${nextLot} | Last lot: ${currentMax}`;
+  } catch (e) {
+    console.error('updateLotInfo error:', e);
+  }
 }
 </script>
 
