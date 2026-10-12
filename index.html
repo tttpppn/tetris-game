@@ -608,7 +608,9 @@
                     if (currentPiece.shape[row][col]) {
                         const x = currentPiece.x + col;
                         const y = currentPiece.y + row;
-                        if (y >= 0) board[y][x] = currentPiece.color;
+                        if (y >= 0 && y < ROWS && x >= 0 && x < COLS) {
+                            board[y][x] = currentPiece.color;
+                        }
                     }
                 }
             }
