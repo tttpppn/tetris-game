@@ -438,46 +438,69 @@
             }
         }
 
-        function playPlaceSound() {
+        function playExplosion() {
             if (!soundEnabled) return;
             try {
-                if (sounds.place && sounds.place.playing()) sounds.place.stop();
-                if (sounds.place) {
-                    sounds.place.play().catch(() => {
-                        playSound(200, 0.1, 'sine', 0.2);
-                        playSound(250, 0.1, 'sine', 0.2);
-                    });
-                } else {
-                    playSound(200, 0.1, 'sine', 0.2);
-                    playSound(250, 0.1, 'sine', 0.2);
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().catch(e => console.warn('AudioContext resume failed:', e));
                 }
+
+                const now = audioContext.currentTime;
+
+                // Create explosion burst with filtered noise
+                const noiseBuffer = audioContext.createBuffer(1, audioContext.sampleRate * 0.3, audioContext.sampleRate);
+                const output = noiseBuffer.getChannelData(0);
+                for (let i = 0; i < noiseBuffer.length; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+
+                const noiseSource = audioContext.createBufferSource();
+                noiseSource.buffer = noiseBuffer;
+
+                // Filter the noise
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'highpass';
+                filter.frequency.value = 1000;
+
+                // Envelope for noise
+                const noiseGain = audioContext.createGain();
+                noiseGain.gain.setValueAtTime(0.4, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                noiseSource.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(audioContext.destination);
+                noiseSource.start(now);
+                noiseSource.stop(now + 0.3);
+
+                // Add pitch sweep for depth
+                const osc = audioContext.createOscillator();
+                const oscGain = audioContext.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+
+                oscGain.gain.setValueAtTime(0.2, now);
+                oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+                osc.connect(oscGain);
+                oscGain.connect(audioContext.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
             } catch (e) {
-                playSound(200, 0.1, 'sine', 0.2);
-                playSound(250, 0.1, 'sine', 0.2);
+                console.warn('Explosion sound failed:', e);
             }
+        }
+
+        function playPlaceSound() {
+            if (!soundEnabled) return;
+            playSound(150, 0.05, 'square', 0.3);
+            setTimeout(() => playSound(200, 0.08, 'square', 0.25), 30);
         }
 
         function playClearSound() {
             if (!soundEnabled) return;
-            try {
-                if (sounds.clearLine && sounds.clearLine.playing()) sounds.clearLine.stop();
-                const playFallback = () => {
-                    playSound(100, 0.2, 'sine', 0.7);
-                    playSound(150, 0.2, 'square', 0.6);
-                    setTimeout(() => {
-                        playSound(800, 0.1, 'sawtooth', 0.7);
-                        playSound(1200, 0.1, 'sawtooth', 0.65);
-                    }, 80);
-                };
-                if (sounds.clearLine) {
-                    sounds.clearLine.play().catch(playFallback);
-                } else {
-                    playFallback();
-                }
-            } catch (e) {
-                playSound(100, 0.2, 'sine', 0.7);
-                playSound(150, 0.2, 'square', 0.6);
-            }
+            playExplosion();
         }
 
         function playRotateSound() {
