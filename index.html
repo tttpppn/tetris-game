@@ -779,9 +779,8 @@
             }
 
             // Draw crumble particles
-            ctx.globalAlpha = 1;
             for (let particle of crumbleEffect) {
-                const normalizedAlpha = Math.max(0, Math.min(1, particle.life - crumbleTime));
+                const normalizedAlpha = Math.max(0, (particle.life - crumbleTime) / particle.life);
                 ctx.globalAlpha = normalizedAlpha;
                 ctx.fillStyle = particle.color;
                 ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
@@ -816,6 +815,11 @@
                 p.vy += 0.15; // gravity
                 p.vx *= 0.98; // air resistance
             });
+
+            // Reset crumble time if no particles remain
+            if (crumbleEffect.length === 0) {
+                crumbleTime = 0;
+            }
 
             dropCounter += deltaTime;
             if (dropCounter > dropInterval) {
