@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Tetris Game - Updated</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/index.js"></script>
     <style>
         * {
             margin: 0;
@@ -370,41 +371,42 @@
                 // Juhani Junkala - Essential Retro Game Sounds (CC0)
                 // https://opengameart.org/content/512-sound-effects-8-bit-style
 
+                // Use direct CDN game sounds from @citedy/game-sounds (552 free sounds)
                 sounds.clearLine = new Howl({
-                    src: ['https://freesound.org/data/previews/588/588173_9703287-lq.mp3'],
+                    src: ['https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/sprites/sfx_point.mp3'],
                     volume: 0.8,
                     preload: true,
                     onloaderror: () => console.warn('clearLine sound failed to load')
                 });
 
                 sounds.place = new Howl({
-                    src: ['https://freesound.org/data/previews/423/423245_7641129-lq.mp3'],
+                    src: ['https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/sprites/sfx_drop.mp3'],
                     volume: 0.6,
                     preload: true,
                     onloaderror: () => console.warn('place sound failed to load')
                 });
 
                 sounds.rotate = new Howl({
-                    src: ['https://freesound.org/data/previews/423/423214_7641129-lq.mp3'],
+                    src: ['https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/sprites/sfx_rotate.mp3'],
                     volume: 0.4,
                     preload: true,
                     onloaderror: () => console.warn('rotate sound failed to load')
                 });
 
                 sounds.move = new Howl({
-                    src: ['https://freesound.org/data/previews/423/423211_7641129-lq.mp3'],
+                    src: ['https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/sprites/sfx_move.mp3'],
                     volume: 0.3,
                     preload: true,
                     onloaderror: () => console.warn('move sound failed to load')
                 });
 
                 sounds.gameOver = new Howl({
-                    src: ['https://freesound.org/data/previews/501/501733_8921917-lq.mp3'],
+                    src: ['https://cdn.jsdelivr.net/npm/@citedy/game-sounds@3.0.1/dist/sprites/sfx_gameover.mp3'],
                     volume: 0.7,
                     preload: true,
                     onloaderror: () => console.warn('gameOver sound failed to load')
                 });
-                console.log('Game sounds initialized - Free sounds from Freesound.org & OpenGameArt (CC0/CC-BY)');
+                console.log('✓ Game sounds initialized from @citedy/game-sounds CDN (jsDelivr)');
             } catch (e) {
                 console.error('Failed to initialize game sounds:', e);
             }
