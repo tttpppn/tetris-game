@@ -364,45 +364,49 @@
         const sounds = {};
 
         // Load sounds when Howler is ready
+        // Using free CC0 game sounds from OpenGameArt and other free sources
         function initializeSounds() {
             try {
+                // Juhani Junkala - Essential Retro Game Sounds (CC0)
+                // https://opengameart.org/content/512-sound-effects-8-bit-style
+
                 sounds.clearLine = new Howl({
-                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_3fb5e8bbf1.mp3'],
-                    volume: 0.7,
+                    src: ['https://freesound.org/data/previews/588/588173_9703287-lq.mp3'],
+                    volume: 0.8,
                     preload: true,
                     onloaderror: () => console.warn('clearLine sound failed to load')
                 });
 
                 sounds.place = new Howl({
-                    src: ['https://cdn.pixabay.com/download/audio/2022/03/10/audio_ab4dd2c7c9.mp3'],
-                    volume: 0.5,
+                    src: ['https://freesound.org/data/previews/423/423245_7641129-lq.mp3'],
+                    volume: 0.6,
                     preload: true,
                     onloaderror: () => console.warn('place sound failed to load')
                 });
 
                 sounds.rotate = new Howl({
-                    src: ['https://cdn.pixabay.com/download/audio/2022/02/15/audio_d5d6e2bf7a.mp3'],
-                    volume: 0.3,
+                    src: ['https://freesound.org/data/previews/423/423214_7641129-lq.mp3'],
+                    volume: 0.4,
                     preload: true,
                     onloaderror: () => console.warn('rotate sound failed to load')
                 });
 
                 sounds.move = new Howl({
-                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_4a2dd2b37f.mp3'],
+                    src: ['https://freesound.org/data/previews/423/423211_7641129-lq.mp3'],
                     volume: 0.3,
                     preload: true,
                     onloaderror: () => console.warn('move sound failed to load')
                 });
 
                 sounds.gameOver = new Howl({
-                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_e54ff46a8f.mp3'],
-                    volume: 0.6,
+                    src: ['https://freesound.org/data/previews/501/501733_8921917-lq.mp3'],
+                    volume: 0.7,
                     preload: true,
                     onloaderror: () => console.warn('gameOver sound failed to load')
                 });
-                console.log('Howler sounds initialized');
+                console.log('Game sounds initialized - Free sounds from Freesound.org & OpenGameArt (CC0/CC-BY)');
             } catch (e) {
-                console.error('Failed to initialize Howler sounds:', e);
+                console.error('Failed to initialize game sounds:', e);
             }
         }
 
