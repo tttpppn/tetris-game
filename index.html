@@ -365,35 +365,45 @@
 
         // Load sounds when Howler is ready
         function initializeSounds() {
-            sounds.clearLine = new Howl({
-                src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_3fb5e8bbf1.mp3'],
-                volume: 0.7,
-                preload: true
-            });
+            try {
+                sounds.clearLine = new Howl({
+                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_3fb5e8bbf1.mp3'],
+                    volume: 0.7,
+                    preload: true,
+                    onloaderror: () => console.warn('clearLine sound failed to load')
+                });
 
-            sounds.place = new Howl({
-                src: ['https://cdn.pixabay.com/download/audio/2022/03/10/audio_ab4dd2c7c9.mp3'],
-                volume: 0.5,
-                preload: true
-            });
+                sounds.place = new Howl({
+                    src: ['https://cdn.pixabay.com/download/audio/2022/03/10/audio_ab4dd2c7c9.mp3'],
+                    volume: 0.5,
+                    preload: true,
+                    onloaderror: () => console.warn('place sound failed to load')
+                });
 
-            sounds.rotate = new Howl({
-                src: ['https://cdn.pixabay.com/download/audio/2022/02/15/audio_d5d6e2bf7a.mp3'],
-                volume: 0.3,
-                preload: true
-            });
+                sounds.rotate = new Howl({
+                    src: ['https://cdn.pixabay.com/download/audio/2022/02/15/audio_d5d6e2bf7a.mp3'],
+                    volume: 0.3,
+                    preload: true,
+                    onloaderror: () => console.warn('rotate sound failed to load')
+                });
 
-            sounds.move = new Howl({
-                src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_4a2dd2b37f.mp3'],
-                volume: 0.3,
-                preload: true
-            });
+                sounds.move = new Howl({
+                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_4a2dd2b37f.mp3'],
+                    volume: 0.3,
+                    preload: true,
+                    onloaderror: () => console.warn('move sound failed to load')
+                });
 
-            sounds.gameOver = new Howl({
-                src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_e54ff46a8f.mp3'],
-                volume: 0.6,
-                preload: true
-            });
+                sounds.gameOver = new Howl({
+                    src: ['https://cdn.pixabay.com/download/audio/2021/08/04/audio_e54ff46a8f.mp3'],
+                    volume: 0.6,
+                    preload: true,
+                    onloaderror: () => console.warn('gameOver sound failed to load')
+                });
+                console.log('Howler sounds initialized');
+            } catch (e) {
+                console.error('Failed to initialize Howler sounds:', e);
+            }
         }
 
         // Fallback: synthesized sounds if Howler fails
@@ -402,6 +412,11 @@
         function playSound(frequency, duration, type = 'sine', volume = 0.3) {
             if (!soundEnabled) return;
             try {
+                // Ensure audio context is running
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume().catch(e => console.warn('AudioContext resume failed:', e));
+                }
+
                 const osc = audioContext.createOscillator();
                 const gain = audioContext.createGain();
                 osc.type = type;
@@ -413,7 +428,7 @@
                 osc.start(audioContext.currentTime);
                 osc.stop(audioContext.currentTime + duration);
             } catch (e) {
-                console.warn('Sound playback failed:', e);
+                console.warn('Synthesized sound playback failed:', e);
             }
         }
 
@@ -421,12 +436,18 @@
             if (!soundEnabled) return;
             try {
                 if (sounds.place && sounds.place.playing()) sounds.place.stop();
-                if (sounds.place) sounds.place.play().catch(() => {
+                if (sounds.place) {
+                    sounds.place.play().catch(() => {
+                        playSound(200, 0.1, 'sine', 0.2);
+                        playSound(250, 0.1, 'sine', 0.2);
+                    });
+                } else {
                     playSound(200, 0.1, 'sine', 0.2);
                     playSound(250, 0.1, 'sine', 0.2);
-                });
+                }
             } catch (e) {
-                console.error('Place sound error:', e);
+                playSound(200, 0.1, 'sine', 0.2);
+                playSound(250, 0.1, 'sine', 0.2);
             }
         }
 
@@ -434,17 +455,22 @@
             if (!soundEnabled) return;
             try {
                 if (sounds.clearLine && sounds.clearLine.playing()) sounds.clearLine.stop();
-                if (sounds.clearLine) sounds.clearLine.play().catch(() => {
-                    // Fallback synthesis
+                const playFallback = () => {
                     playSound(100, 0.2, 'sine', 0.7);
                     playSound(150, 0.2, 'square', 0.6);
                     setTimeout(() => {
                         playSound(800, 0.1, 'sawtooth', 0.7);
                         playSound(1200, 0.1, 'sawtooth', 0.65);
                     }, 80);
-                });
+                };
+                if (sounds.clearLine) {
+                    sounds.clearLine.play().catch(playFallback);
+                } else {
+                    playFallback();
+                }
             } catch (e) {
-                console.error('Clear sound error:', e);
+                playSound(100, 0.2, 'sine', 0.7);
+                playSound(150, 0.2, 'square', 0.6);
             }
         }
 
@@ -452,9 +478,13 @@
             if (!soundEnabled) return;
             try {
                 if (sounds.rotate && sounds.rotate.playing()) sounds.rotate.stop();
-                if (sounds.rotate) sounds.rotate.play().catch(() => playSound(350, 0.05, 'sine', 0.15));
+                if (sounds.rotate) {
+                    sounds.rotate.play().catch(() => playSound(350, 0.05, 'sine', 0.15));
+                } else {
+                    playSound(350, 0.05, 'sine', 0.15);
+                }
             } catch (e) {
-                console.error('Rotate sound error:', e);
+                playSound(350, 0.05, 'sine', 0.15);
             }
         }
 
@@ -462,9 +492,13 @@
             if (!soundEnabled) return;
             try {
                 if (sounds.move && sounds.move.playing()) sounds.move.stop();
-                if (sounds.move) sounds.move.play().catch(() => playSound(300, 0.03, 'sine', 0.1));
+                if (sounds.move) {
+                    sounds.move.play().catch(() => playSound(300, 0.03, 'sine', 0.1));
+                } else {
+                    playSound(300, 0.03, 'sine', 0.1);
+                }
             } catch (e) {
-                console.error('Move sound error:', e);
+                playSound(300, 0.03, 'sine', 0.1);
             }
         }
 
@@ -472,13 +506,20 @@
             if (!soundEnabled) return;
             try {
                 if (sounds.gameOver && sounds.gameOver.playing()) sounds.gameOver.stop();
-                if (sounds.gameOver) sounds.gameOver.play().catch(() => {
+                const playFallback = () => {
                     playSound(200, 0.3, 'sine', 0.4);
                     playSound(150, 0.3, 'sine', 0.4);
                     playSound(100, 0.5, 'sine', 0.4);
-                });
+                };
+                if (sounds.gameOver) {
+                    sounds.gameOver.play().catch(playFallback);
+                } else {
+                    playFallback();
+                }
             } catch (e) {
-                console.error('GameOver sound error:', e);
+                playSound(200, 0.3, 'sine', 0.4);
+                playSound(150, 0.3, 'sine', 0.4);
+                playSound(100, 0.5, 'sine', 0.4);
             }
         }
 
