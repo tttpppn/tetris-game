@@ -615,11 +615,16 @@
                 // Create crumble effect for each row being cleared
                 rowsToClear.forEach(row => createCrumbleEffect(row));
 
-                // Clear rows
+                // Clear rows in reverse order to avoid index shifting
+                rowsToClear.sort((a, b) => b - a);
                 rowsToClear.forEach(row => {
                     board.splice(row, 1);
-                    board.unshift(Array(COLS).fill(0));
                 });
+
+                // Add empty rows at top
+                for (let i = 0; i < linesCleared; i++) {
+                    board.unshift(Array(COLS).fill(0));
+                }
 
                 playClearSound();
                 lines += linesCleared;
