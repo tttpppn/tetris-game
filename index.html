@@ -779,11 +779,14 @@
             }
 
             // Draw crumble particles
+            ctx.globalAlpha = 1;
             for (let particle of crumbleEffect) {
-                const alpha = Math.max(0, particle.life - crumbleTime);
-                ctx.fillStyle = particle.color.replace(')', ', ' + alpha + ')').replace('rgb', 'rgba');
+                const normalizedAlpha = Math.max(0, Math.min(1, particle.life - crumbleTime));
+                ctx.globalAlpha = normalizedAlpha;
+                ctx.fillStyle = particle.color;
                 ctx.fillRect(particle.x - particle.size / 2, particle.y - particle.size / 2, particle.size, particle.size);
             }
+            ctx.globalAlpha = 1;
 
             // Draw game over message
             if (gameOver) {
