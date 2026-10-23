@@ -73,6 +73,7 @@
             image-rendering: pixelated;
             image-rendering: -moz-crisp-edges;
             image-rendering: crisp-edges;
+            touch-action: none;
         }
 
         .controls {
@@ -1006,6 +1007,7 @@
             const TAP_TIME_THRESHOLD = 200;
 
             canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
                 const touch = e.touches[0];
                 touchStartX = touch.clientX;
                 touchStartY = touch.clientY;
@@ -1015,12 +1017,14 @@
             }, false);
 
             canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
                 const touch = e.touches[0];
                 touchEndX = touch.clientX;
                 touchEndY = touch.clientY;
             }, false);
 
             canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
                 if (gameOver || paused) return;
 
                 const deltaX = touchEndX - touchStartX;
