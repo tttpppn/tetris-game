@@ -993,6 +993,51 @@
             if (!gameOver && !paused) hardDrop();
         });
 
+        // Touch gesture controls (mobile only)
+        if (isMobile()) {
+            const canvas = document.querySelector('canvas');
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+            const SWIPE_THRESHOLD = 30;
+            const TAP_THRESHOLD = 200;
+
+            canvas.addEventListener('touchstart', (e) => {
+                const touch = e.touches[0];
+                touchStartX = touch.clientX;
+                touchStartY = touch.clientY;
+                touchEndX = touch.clientX;
+                touchEndY = touch.clientY;
+            }, false);
+
+            canvas.addEventListener('touchmove', (e) => {
+                const touch = e.touches[0];
+                touchEndX = touch.clientX;
+                touchEndY = touch.clientY;
+            }, false);
+
+            canvas.addEventListener('touchend', (e) => {
+                if (gameOver || paused) return;
+
+                const deltaX = touchEndX - touchStartX;
+                const deltaY = touchEndY - touchStartY;
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                if (distance < TAP_THRESHOLD && distance > 0) {
+                    rotate();
+                } else if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                    if (deltaX < 0) {
+                        moveRight();
+                    } else {
+                        moveLeft();
+                    }
+                } else if (deltaY > SWIPE_THRESHOLD) {
+                    hardDrop();
+                }
+            }, false);
+        }
+
         let lastTime = Date.now();
         function gameLoop() {
             const currentTime = Date.now();
