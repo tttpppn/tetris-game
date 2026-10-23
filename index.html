@@ -1000,8 +1000,10 @@
             let touchStartY = 0;
             let touchEndX = 0;
             let touchEndY = 0;
+            let touchStartTime = 0;
             const SWIPE_THRESHOLD = 30;
-            const TAP_THRESHOLD = 200;
+            const TAP_THRESHOLD = 10;
+            const TAP_TIME_THRESHOLD = 200;
 
             canvas.addEventListener('touchstart', (e) => {
                 const touch = e.touches[0];
@@ -1009,6 +1011,7 @@
                 touchStartY = touch.clientY;
                 touchEndX = touch.clientX;
                 touchEndY = touch.clientY;
+                touchStartTime = Date.now();
             }, false);
 
             canvas.addEventListener('touchmove', (e) => {
@@ -1023,17 +1026,23 @@
                 const deltaX = touchEndX - touchStartX;
                 const deltaY = touchEndY - touchStartY;
                 const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const touchDuration = Date.now() - touchStartTime;
 
-                if (distance < TAP_THRESHOLD && distance > 0) {
-                    rotate();
-                } else if (Math.abs(deltaX) > SWIPE_THRESHOLD) {
+                // Horizontal swipe (left/right)
+                if (Math.abs(deltaX) > SWIPE_THRESHOLD && Math.abs(deltaX) > Math.abs(deltaY)) {
                     if (deltaX < 0) {
-                        moveRight();
-                    } else {
                         moveLeft();
+                    } else {
+                        moveRight();
                     }
-                } else if (deltaY > SWIPE_THRESHOLD) {
+                }
+                // Vertical swipe down (drop)
+                else if (deltaY > SWIPE_THRESHOLD && deltaY > Math.abs(deltaX)) {
                     hardDrop();
+                }
+                // Tap (very small movement + quick)
+                else if (distance < TAP_THRESHOLD && touchDuration < TAP_TIME_THRESHOLD) {
+                    rotate();
                 }
             }, false);
         }
